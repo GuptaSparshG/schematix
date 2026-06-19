@@ -1,0 +1,12 @@
+circuit-venv/
+3d-to-2d-diagram/
+output/
+__pycache__/
+**/__pycache__/
+*.pyc
+.git/
+.gitignore
+.env
+.DS_Store
+*.md
+!README.md

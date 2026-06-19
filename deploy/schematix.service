@@ -1,0 +1,41 @@
+# systemd unit for Schematix.
+#
+# Install:
+#   sudo cp deploy/schematix.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now schematix
+#
+# Status / logs:
+#   systemctl status schematix
+#   journalctl -u schematix -f
+
+[Unit]
+Description=Schematix · Circuit Analyzer + Draft Studio
+After=network.target
+
+[Service]
+Type=simple
+User=schematix
+Group=schematix
+WorkingDirectory=/opt/schematix
+
+# Bind only to localhost — nginx fronts it on 443.
+Environment="HOST=127.0.0.1"
+Environment="PORT=8000"
+Environment="NO_BROWSER=1"
+EnvironmentFile=/opt/schematix/.env
+
+ExecStart=/opt/schematix/circuit-venv/bin/python -m server
+
+Restart=on-failure
+RestartSec=5s
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/schematix/output
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Schematix · Engineering toolkit</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-mark" aria-label="Schematix logo">
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" width="22" height="22" aria-hidden="true">
+            <!-- circuit board background -->
+            <rect x="2" y="2" width="28" height="28" rx="7" fill="rgba(255,255,255,0.08)"/>
+            <!-- traces -->
+            <path d="M6 16 H12 M20 16 H26 M16 6 V12 M16 20 V26" stroke="white" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+            <!-- nodes -->
+            <circle cx="6"  cy="16" r="1.6" fill="white" opacity="0.7"/>
+            <circle cx="26" cy="16" r="1.6" fill="white" opacity="0.7"/>
+            <circle cx="16" cy="6"  r="1.6" fill="white" opacity="0.7"/>
+            <circle cx="16" cy="26" r="1.6" fill="white" opacity="0.7"/>
+            <!-- central spark -->
+            <path d="M16 9 L13.2 17 H16 L14.5 23 L19 14 H16.4 Z" fill="#FBBF24"/>
+          </svg>
+        </span>
+        <div class="brand-text">
+          <span class="brand-name">Schematix</span>
+          <span class="brand-tagline">Engineering toolkit</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Circuit Analyzer</div>
+        <a href="#" class="nav-item active" data-view="analyzer"><i class="bi bi-grid-1x2"></i><span>Analyzer</span></a>
+        <a href="#" class="nav-item" data-view="cost"><i class="bi bi-cash-stack"></i><span>Cost Analysis</span></a>
+        <a href="#" class="nav-item" data-view="history"><i class="bi bi-clock-history"></i><span>History</span></a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Draft Studio</div>
+        <a href="#" class="nav-item" data-view="stl"><i class="bi bi-box"></i><span>STL → 2D Drawing</span></a>
+        <a href="#" class="nav-item" data-view="stl-history"><i class="bi bi-clock-history"></i><span>Drawing History</span></a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Support</div>
+        <a href="#" class="nav-item"><i class="bi bi-gear"></i><span>Settings</span></a>
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="nav-item"><i class="bi bi-info-circle"></i><span>Help</span></a>
+      </div>
+
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- Top bar -->
+      <header class="topbar">
+        <div>
+          <h1 class="page-title" id="page-title">Schematix · Circuit Reader</h1>
+          <p class="page-sub" id="page-sub">Identify every component in your schematic in seconds</p>
+        </div>
+      </header>
+
+      <!-- Analyzer view -->
+      <div id="view-analyzer">
+      <!-- Stat row -->
+      <section class="stat-row">
+        <div class="stat-card">
+          <div class="stat-head">
+            <span class="stat-icon stat-icon-blue"><i class="bi bi-cpu"></i></span>
+            <div>
+              <div class="stat-label">Total Components</div>
+              <div class="stat-value" id="stat-total">—</div>
+            </div>
+          </div>
+          <span id="stat-total-delta" class="chip chip-muted">Idle</span>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-head">
+            <span class="stat-icon stat-icon-green"><i class="bi bi-tags"></i></span>
+            <div>
+              <div class="stat-label">Categories</div>
+              <div class="stat-value" id="stat-cats">—</div>
+            </div>
+          </div>
+          <span id="stat-cats-delta" class="chip chip-muted">—</span>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-head">
+            <span class="stat-icon stat-icon-amber"><i class="bi bi-lightning"></i></span>
+            <div>
+              <div class="stat-label">Latency</div>
+              <div class="stat-value" id="stat-latency">—</div>
+            </div>
+          </div>
+          <span id="stat-latency-delta" class="chip chip-muted">—</span>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-head">
+            <span class="stat-icon stat-icon-violet"><i class="bi bi-robot"></i></span>
+            <div>
+              <div class="stat-label">Model</div>
+              <div class="stat-value" style="font-size: 17px;">flash-lite</div>
+            </div>
+          </div>
+          <span class="chip chip-success">Free tier</span>
+        </div>
+      </section>
+
+      <!-- Workspace row: upload | breakdown -->
+      <section class="workspace">
+
+        <!-- Image / analyze panel -->
+        <div class="panel">
+          <header class="panel-head">
+            <div>
+              <h3 class="panel-title">Circuit image</h3>
+              <p class="panel-sub">Pick a sample or upload a schematic</p>
+            </div>
+            <span id="status" class="chip chip-muted" data-state="idle">Idle</span>
+          </header>
+
+          <div class="panel-body">
+            <input id="file-input" type="file" accept="image/*" style="display: none;" />
+            <div class="upload-zone" id="upload-zone" role="button" tabindex="0">
+              <span class="upload-icon"><i class="bi bi-cloud-arrow-up"></i></span>
+              <div>
+                <div class="upload-title">Drop an image here</div>
+                <div class="upload-sub">or click to browse · PNG / JPG / WEBP</div>
+              </div>
+            </div>
+
+            <div class="preview-wrap">
+              <img id="preview" alt="" hidden />
+              <div id="preview-empty" class="preview-empty">
+                <i class="bi bi-image"></i>
+                <div>No image loaded</div>
+              </div>
+            </div>
+            <div id="path-label" class="path-label"></div>
+
+            <div class="action-row">
+              <button id="analyze-btn" class="btn btn-cta" disabled>
+                <span class="btn-label"><i class="bi bi-search"></i> Analyze circuit</span>
+                <span class="cta-spinner" hidden></span>
+              </button>
+              <button id="export-btn" class="btn btn-ghost" disabled>
+                <i class="bi bi-download"></i> Export CSV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Breakdown panel -->
+        <div class="panel">
+          <header class="panel-head">
+            <div>
+              <h3 class="panel-title">Component breakdown</h3>
+              <p class="panel-sub">Distribution across categories</p>
+            </div>
+          </header>
+          <div class="panel-body breakdown-body" id="breakdown">
+            <div class="empty">
+              <i class="bi bi-pie-chart"></i>
+              <div>No analysis yet</div>
+              <small>Run an analysis to see categories here.</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BOM table panel -->
+      <section class="panel bom-panel">
+        <header class="panel-head">
+          <div>
+            <h3 class="panel-title">Bill of Materials</h3>
+            <p class="panel-sub" id="bom-sub">Full list of identified components</p>
+          </div>
+          <div class="bom-controls">
+            <div class="search-field">
+              <i class="bi bi-search"></i>
+              <input type="text" id="bom-search" placeholder="Filter by label, value, or category…" disabled />
+            </div>
+          </div>
+        </header>
+        <div class="panel-body p-0">
+          <table class="bom-table">
+            <thead>
+              <tr>
+                <th style="width: 22%;">Category</th>
+                <th style="width: 16%;">Label</th>
+                <th style="width: 22%;">Value</th>
+                <th>Type / Notes</th>
+              </tr>
+            </thead>
+            <tbody id="bom-body">
+              <tr><td colspan="4" class="empty-cell">No analysis yet — run one to populate the BOM.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="summary-card" class="summary-card" hidden>
+          <strong>Summary.</strong>
+          <span id="summary-text"></span>
+        </div>
+      </section>
+      </div><!-- /view-analyzer -->
+
+      <!-- Cost Analysis view -->
+      <div id="view-cost" hidden>
+
+        <div id="cost-loader" class="cost-loader" hidden>
+          <div class="cl-pulse"></div>
+          <div class="cl-spinner"></div>
+          <div class="cl-text">
+            <div class="cl-title">Searching real prices…</div>
+            <div class="cl-sub" id="cost-loader-sub">Querying Digi-Key · Mouser · Amazon · AliExpress · RS Components · IndiaMART</div>
+            <div class="cl-sites" id="cost-loader-sites">
+              <span class="cl-chip" data-site="Digi-Key">Digi-Key</span>
+              <span class="cl-chip" data-site="Mouser">Mouser</span>
+              <span class="cl-chip" data-site="Amazon">Amazon</span>
+              <span class="cl-chip" data-site="AliExpress">AliExpress</span>
+              <span class="cl-chip" data-site="RS Components">RS Components</span>
+              <span class="cl-chip" data-site="IndiaMART">IndiaMART</span>
+            </div>
+            <div class="cl-progress"><div class="cl-progress-fill"></div></div>
+            <div class="cl-eta" id="cost-loader-eta">Web search via Gemini grounding · typically 20–40s</div>
+          </div>
+        </div>
+
+        <section class="stat-row">
+          <div class="stat-card">
+            <div class="stat-head">
+              <span class="stat-icon stat-icon-green"><i class="bi bi-currency-dollar"></i></span>
+              <div>
+                <div class="stat-label">Total min cost</div>
+                <div class="stat-value" id="cost-total">—</div>
+              </div>
+            </div>
+            <span id="cost-total-chip" class="chip chip-muted">USD</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-head">
+              <span class="stat-icon stat-icon-blue"><i class="bi bi-shop"></i></span>
+              <div>
+                <div class="stat-label">Cheapest source</div>
+                <div class="stat-value" id="cost-cheapest" style="font-size: 18px;">—</div>
+              </div>
+            </div>
+            <span class="chip chip-success">Best buy</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-head">
+              <span class="stat-icon stat-icon-amber"><i class="bi bi-box-seam"></i></span>
+              <div>
+                <div class="stat-label">Components priced</div>
+                <div class="stat-value" id="cost-count">—</div>
+              </div>
+            </div>
+            <span class="chip chip-warning">items</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-head">
+              <span class="stat-icon stat-icon-violet"><i class="bi bi-lightning"></i></span>
+              <div>
+                <div class="stat-label">Latency</div>
+                <div class="stat-value" id="cost-latency">—</div>
+              </div>
+            </div>
+            <span class="chip chip-primary">Gemini</span>
+          </div>
+        </section>
+
+        <section class="panel" style="margin-top: 14px;">
+          <header class="panel-head">
+            <div>
+              <h3 class="panel-title">Per-site totals</h3>
+              <p class="panel-sub">Sum of all components if you bought everything from one site</p>
+            </div>
+            <button id="cost-refresh" class="btn btn-ghost" disabled>
+              <i class="bi bi-arrow-clockwise"></i> Re-run pricing
+            </button>
+          </header>
+          <div class="panel-body">
+            <div id="site-totals" class="site-totals">
+              <div class="empty" style="text-align:center;padding:40px;color:var(--muted);">
+                <i class="bi bi-cash-stack" style="font-size:28px;opacity:0.4;display:block;margin-bottom:8px;"></i>
+                Run an analysis first, then come back here.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel bom-panel" style="margin-top: 14px;">
+          <header class="panel-head">
+            <div>
+              <h3 class="panel-title">Component pricing</h3>
+              <p class="panel-sub" id="cost-sub">Cheapest source per component, plus cross-site comparison</p>
+            </div>
+            <div class="bom-controls">
+              <div class="search-field">
+                <i class="bi bi-search"></i>
+                <input type="text" id="cost-search" placeholder="Filter by label, value, or site…" disabled />
+              </div>
+            </div>
+          </header>
+          <div class="panel-body p-0">
+            <table class="bom-table cost-table">
+              <thead>
+                <tr>
+                  <th style="width: 14%;">Label</th>
+                  <th style="width: 18%;">Value</th>
+                  <th style="width: 16%;">Category</th>
+                  <th style="width: 14%;">Min Price</th>
+                  <th style="width: 14%;">Cheapest</th>
+                  <th>Site prices (USD)</th>
+                </tr>
+              </thead>
+              <tbody id="cost-body">
+                <tr><td colspan="6" class="empty-cell">No pricing yet — run an analysis, then click "Run pricing".</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div><!-- /view-cost -->
+
+      <!-- STL → 2D Drawing view -->
+      <div id="view-stl" hidden>
+        <section class="panel">
+          <header class="panel-head">
+            <div>
+              <h3 class="panel-title">STL → 2D Engineering Drawing</h3>
+              <p class="panel-sub">Upload an <code>.stl</code> mesh → get Front / Side / Top / Isometric orthographic views</p>
+            </div>
+          </header>
+          <div class="panel-body">
+            <div class="stl-row">
+              <div class="stl-left">
+                <input id="stl-file-input" type="file" accept=".stl" style="display:none;" />
+                <div id="stl-drop" class="upload-zone" role="button" tabindex="0">
+                  <span class="upload-icon"><i class="bi bi-box"></i></span>
+                  <div>
+                    <div class="upload-title">Drop an <code>.stl</code> file here</div>
+                    <div class="upload-sub">or click to browse</div>
+                  </div>
+                </div>
+                <div id="stl-filename" class="path-label"></div>
+
+                <div class="field-row" style="margin-top: 16px;">
+                  <label class="field-label" for="stl-drawn-by">Drawn by</label>
+                  <input id="stl-drawn-by" class="select-input" type="text" value="Engineer" />
+                </div>
+                <div class="field-row">
+                  <label class="field-label" for="stl-line-width">Line width</label>
+                  <select id="stl-line-width" class="select-input">
+                    <option value="0.5">0.5 — Thin (complex parts)</option>
+                    <option value="0.7">0.7 — Medium</option>
+                    <option value="1.0" selected>1.0 — Bold</option>
+                  </select>
+                </div>
+                <div class="field-row">
+                  <label class="field-label" for="stl-dpi">Output quality (DPI)</label>
+                  <select id="stl-dpi" class="select-input">
+                    <option value="150">150 — Fast</option>
+                    <option value="200">200 — Good</option>
+                    <option value="250" selected>250 — Sharp</option>
+                  </select>
+                </div>
+
+                <button id="stl-generate" class="btn btn-cta" disabled style="margin-top: 12px;">
+                  <span class="btn-label"><i class="bi bi-box-arrow-up-right"></i> Generate drawing</span>
+                  <span class="cta-spinner" hidden></span>
+                </button>
+                <button id="stl-download" class="btn btn-ghost" disabled style="margin-top: 8px;">
+                  <i class="bi bi-download"></i> Download PNG
+                </button>
+              </div>
+
+              <div class="stl-right">
+                <div id="stl-preview-wrap" class="stl-preview-wrap">
+                  <div class="empty" style="text-align:center;padding:60px 20px;color:var(--muted);">
+                    <i class="bi bi-rulers" style="font-size:32px;opacity:0.4;display:block;margin-bottom:8px;"></i>
+                    <div>No drawing yet</div>
+                    <small>Upload an STL and click <strong>Generate drawing</strong></small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div><!-- /view-stl -->
+
+      <!-- STL Drawing History view -->
+      <div id="view-stl-history" hidden>
+        <section class="panel">
+          <header class="panel-head">
+            <div>
+              <h3 class="panel-title">Drawing history</h3>
+              <p class="panel-sub" id="stl-history-sub">Last 20 generated STL drawings · click any card to reopen</p>
+            </div>
+            <button id="stl-history-clear" class="btn btn-ghost"><i class="bi bi-trash"></i> Clear all</button>
+          </header>
+          <div class="panel-body">
+            <div id="stl-history-grid" class="history-grid">
+              <div class="empty" style="text-align:center;padding:40px;color:var(--muted);grid-column:1/-1;">
+                Loading…
+              </div>
+            </div>
+          </div>
+        </section>
+      </div><!-- /view-stl-history -->
+
+      <!-- History view -->
+      <div id="view-history" hidden>
+        <section class="panel">
+          <header class="panel-head">
+            <div>
+              <h3 class="panel-title">Recent analyses</h3>
+              <p class="panel-sub" id="history-sub">Last 20 runs — click any card to reload it</p>
+            </div>
+            <button id="history-clear" class="btn btn-ghost" title="Delete all history">
+              <i class="bi bi-trash"></i> Clear all
+            </button>
+          </header>
+          <div class="panel-body">
+            <div id="history-grid" class="history-grid">
+              <div class="empty" style="text-align:center;padding:40px;color:var(--muted);grid-column:1/-1;">
+                <i class="bi bi-clock-history" style="font-size:28px;opacity:0.4;display:block;margin-bottom:8px;"></i>
+                Loading…
+              </div>
+            </div>
+          </div>
+        </section>
+      </div><!-- /view-history -->
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+# ── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual envs
+circuit-venv/
+venv/
+.venv/
+env/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# ── Secrets / env ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+.circuit-analyzer-key
+
+# ── Runtime / generated data ──────────────────────────────────────────
+output/
+!output/.gitkeep
+
+# Sample inputs are kept for testing; uncomment to exclude.
+# input/
+
+# ── IDE / OS ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Docker / deploy ───────────────────────────────────────────────────
+deploy/certs/
+*.tar
+*.tar.gz
+
+# ── Test / coverage ───────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# ── Node (if you ever add a JS build step) ────────────────────────────
+node_modules/
+package-lock.json
+yarn.lock

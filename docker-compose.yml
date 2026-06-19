@@ -1,0 +1,45 @@
+# Schematix production stack.
+#
+#   docker compose up -d           # start
+#   docker compose logs -f         # follow logs
+#   docker compose down            # stop
+#
+# Mount `output/` so history + generated drawings survive container rebuilds.
+
+services:
+  schematix:
+    build: .
+    image: schematix:latest
+    container_name: schematix
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      NO_BROWSER: "1"
+      # Lock CORS to your domain in production. Comma-separated list, or '*' for all.
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+    expose:
+      - "8000"
+    ports:
+      # Comment out if you only want nginx to talk to it internally.
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./output:/app/output
+      - ./input:/app/input:ro
+
+  # Optional reverse proxy with HTTPS via Let's Encrypt.
+  # Uncomment when ready to expose to the public internet.
+  #
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: schematix-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+  #     - ./deploy/certs:/etc/nginx/certs:ro
+  #   depends_on:
+  #     - schematix
