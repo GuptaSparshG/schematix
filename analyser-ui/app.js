@@ -211,7 +211,7 @@ function showPreview(src, name) {
 async function runAnalyze() {
   if (!state.imageSource) return;
 
-  setStatus('Calling Gemini…', 'working');
+  setStatus('Analyzing image…', 'working');
   els.analyzeBtn.disabled = true;
   els.exportBtn.disabled = true;
   toggleSpinner(true);
@@ -265,7 +265,7 @@ function showWorking() {
     <div class="empty">
       <i class="bi bi-hourglass-split" style="opacity: 0.7;"></i>
       <div>Analyzing…</div>
-      <small>Gemini is identifying components. Usually 5–9s.</small>
+      <small>Identifying components. Usually 5–9s.</small>
     </div>`;
   els.bomBody.innerHTML = `<tr><td colspan="4" class="empty-cell">Working — results will appear here.</td></tr>`;
   els.summaryCard.hidden = true;
@@ -296,7 +296,7 @@ function renderResults(data) {
   els.statCatsDelta.innerHTML = `<i class="bi bi-grid"></i> ${data.title || 'Circuit'}`;
   els.statLatency.textContent = `${elapsed}s`;
   els.statLatencyDelta.className = 'chip ' + (elapsed !== '—' && elapsed < 7 ? 'chip-success' : 'chip-warning');
-  els.statLatencyDelta.innerHTML = `<i class="bi bi-stopwatch"></i> Gemini`;
+  els.statLatencyDelta.innerHTML = `<i class="bi bi-stopwatch"></i> AI engine`;
 
   // Rich per-category cards with item lists
   els.breakdown.innerHTML = '';
@@ -770,8 +770,8 @@ function renderCost(data) {
   }
 
   const sourceLabel = data.source === 'google_search_grounded'
-    ? '🌐 Real prices via Google Search'
-    : '📊 Estimated from Gemini training data';
+    ? '🌐 Real-time web prices'
+    : '📊 Indicative estimate';
   document.getElementById('cost-sub').innerHTML =
     `${comps.length} components priced · cheapest: <strong>${escapeHtml(cheapest)}</strong> · ${elapsed}s · <span class="${data.source === 'google_search_grounded' ? 'text-success' : 'text-muted-strong'}">${sourceLabel}</span>`;
   document.getElementById('cost-search').disabled = comps.length === 0;
