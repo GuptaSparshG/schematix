@@ -9,7 +9,7 @@ from pathlib import Path
 import google.generativeai as genai
 from PIL import Image
 
-from server.config import MODEL_NAME, PROMPT
+from server.config import MODEL_NAME, PROMPT, is_retryable_error, load_api_keys
 
 
 def _repair_truncated_json(text: str) -> str:
@@ -62,23 +62,44 @@ def parse_response(text: str) -> dict:
     return json.loads(_repair_truncated_json(candidate))
 
 
-def analyze_image(image_path: Path, api_key: str) -> dict:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(MODEL_NAME)
+def analyze_image(image_path: Path, api_key: str = "") -> dict:
+    """Run vision analysis. Tries keys in order; rolls over on quota / 503."""
+    # Build the key list: explicit arg first, then env-configured chain.
+    keys: list[str] = []
+    for k in [api_key, *load_api_keys()]:
+        if k and k not in keys:
+            keys.append(k)
+    if not keys:
+        raise RuntimeError("No API key configured.")
+
     img = Image.open(image_path)
-    response = model.generate_content(
-        [PROMPT, img],
-        generation_config={
-            "temperature": 0.0,           # greedy
-            "top_p": 1.0,
-            "top_k": 1,                   # always pick the top token
-            "max_output_tokens": 16384,
-            "response_mime_type": "application/json",
-        },
-    )
-    try:
-        return parse_response(response.text)
-    except (ValueError, json.JSONDecodeError) as exc:
-        raise ValueError(
-            f"{exc}\n--- raw model response ---\n{response.text[:1000]}"
-        ) from exc
+    last_err: Exception | None = None
+
+    for i, key in enumerate(keys):
+        try:
+            genai.configure(api_key=key)
+            model = genai.GenerativeModel(MODEL_NAME)
+            response = model.generate_content(
+                [PROMPT, img],
+                generation_config={
+                    "temperature": 0.0, "top_p": 1.0, "top_k": 1,
+                    "max_output_tokens": 16384,
+                    "response_mime_type": "application/json",
+                },
+            )
+            try:
+                return parse_response(response.text)
+            except (ValueError, json.JSONDecodeError) as exc:
+                raise ValueError(
+                    f"Failed to parse response: {exc}\n--- raw ---\n{response.text[:1000]}"
+                ) from exc
+        except Exception as exc:
+            last_err = exc
+            if is_retryable_error(exc) and i < len(keys) - 1:
+                print(f"[analyzer] key #{i+1} failed (retryable) — trying next of {len(keys)}")
+                continue
+            raise
+
+    if last_err:
+        raise last_err
+    raise RuntimeError("No keys configured.")

@@ -41,6 +41,7 @@ from server import (
     analyze_image,
     estimate_costs,
     export_json,
+    friendly_error,
     load_api_key,
 )
 from server import history
@@ -143,10 +144,7 @@ def _run(image_path: Path, api_key: str, save_stem: Optional[str] = None) -> JSO
         data = analyze_image(image_path, api_key)
     except Exception as exc:
         traceback.print_exc()
-        msg = str(exc)
-        if "503" in msg or "UNAVAILABLE" in msg or "overload" in msg.lower():
-            msg = "Gemini is overloaded right now (503). Please try again in a few seconds."
-        return JSONResponse({"error": msg}, status_code=500)
+        return JSONResponse({"error": friendly_error(exc)}, status_code=500)
     elapsed = round(time.time() - started, 2)
     data["_meta"] = {"elapsed_s": elapsed, "image": image_path.name}
 
@@ -220,10 +218,7 @@ def cost_analysis(req: CostRequest):
         result = estimate_costs(req.components, api_key, grounded=req.grounded)
     except Exception as exc:
         traceback.print_exc()
-        msg = str(exc)
-        if "503" in msg or "UNAVAILABLE" in msg or "overload" in msg.lower():
-            msg = "Gemini is overloaded right now (503). Please try again in a few seconds."
-        return JSONResponse({"error": msg}, status_code=500)
+        return JSONResponse({"error": friendly_error(exc)}, status_code=500)
     result["_meta"] = {"elapsed_s": round(time.time() - started, 2)}
 
     # Persist into the matching history entry, if any

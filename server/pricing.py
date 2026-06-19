@@ -18,7 +18,7 @@ import google.generativeai as genai
 from google import genai as new_genai
 from google.genai import types as new_types
 
-from server.config import MODEL_NAME
+from server.config import MODEL_NAME, is_retryable_error, load_api_keys
 
 PRICING_SITES = [
     "Digi-Key", "Mouser", "Amazon", "AliExpress", "RS Components", "IndiaMART",
@@ -230,7 +230,7 @@ def _estimate(bom: list[dict]) -> dict:
     return data
 
 
-def estimate_costs(components: list[dict], api_key: str, grounded: bool = False) -> dict:
+def estimate_costs(components: list[dict], api_key: str = "", grounded: bool = False) -> dict:
     bom = _flatten_bom(components)
     if not bom:
         return {
@@ -242,22 +242,40 @@ def estimate_costs(components: list[dict], api_key: str, grounded: bool = False)
             "source": "empty",
         }
 
-    genai.configure(api_key=api_key)
+    keys: list[str] = []
+    for k in [api_key, *load_api_keys()]:
+        if k and k not in keys:
+            keys.append(k)
+    if not keys:
+        raise RuntimeError("No API key configured.")
 
-    # Default: fast estimation (~5s). Set grounded=True to do real web search (~30s).
-    data = None
     expected = len(bom)
-    if grounded:
-        data = _try_grounded(bom, api_key)
-        if data is not None:
-            got = len(data.get("components", []))
-            if got < expected:
-                # Grounded response was truncated / partial. Fall back so the user
-                # always sees every component, not just the few that made it.
-                print(f"[pricing] grounded returned {got}/{expected} components — falling back to estimation")
-                data = None
+    data = None
+    last_err: Exception | None = None
+
+    for i, key in enumerate(keys):
+        try:
+            genai.configure(api_key=key)
+            if grounded:
+                data = _try_grounded(bom, key)
+                if data is not None and len(data.get("components", [])) < expected:
+                    got = len(data.get("components", []))
+                    print(f"[pricing] grounded returned {got}/{expected} components — falling back to estimation")
+                    data = None
+            if data is None:
+                data = _estimate(bom)
+            break  # success
+        except Exception as exc:
+            last_err = exc
+            if is_retryable_error(exc) and i < len(keys) - 1:
+                print(f"[pricing] key #{i+1} failed (retryable) — trying next of {len(keys)}")
+                continue
+            raise
+
     if data is None:
-        data = _estimate(bom)
+        if last_err:
+            raise last_err
+        raise RuntimeError("Pricing failed with no error captured.")
 
     # Aggregate totals
     totals_by_site: dict[str, float] = {site: 0.0 for site in PRICING_SITES}
